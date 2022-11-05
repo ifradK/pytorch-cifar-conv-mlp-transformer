@@ -37,7 +37,9 @@ I use pytorch for implementation.
 
 `python train_cifar10.py --net swin --n_epochs 400` # train with SwinTransformers
 
-`python train_cifar10.py --net res18` # resnet18+randaug
+`python train_cifar10.py --net res18 --n_epochs 200` # resnet18+randaug
+
+`python train_cifar10.py --net res18_lwe --n_epochs 200` # resnet18+randaug+LWE
 
 # Results..
 
