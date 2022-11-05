@@ -30,6 +30,15 @@ from randomaug import RandAugment
 from models.vit import ViT
 from models.convmixer import ConvMixer
 
+import torch
+import random
+torch.manual_seed(37)
+random.seed(37)
+np.random.seed(37)
+torch.use_deterministic_algorithms(True)
+torch.cuda.manual_seed_all(37)
+os.environ["CUBLAS_WORKSPACE_CONFIG"]=":4096:8"
+
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
