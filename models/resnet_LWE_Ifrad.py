@@ -12,11 +12,11 @@ import torch.nn.functional as F
 from .. import layers as L
 
 
-class BasicBlock(nn.Module):
+class BasicBlock_LWE(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
+        super(BasicBlock_LWE, self).__init__()
         self.conv1 = L.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = L.BatchNorm2d(planes)
         self.conv2 = L.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
@@ -37,11 +37,11 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
+class Bottleneck_LWE(nn.Module):
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
-        super(Bottleneck, self).__init__()
+        super(Bottleneck_LWE, self).__init__()
         self.conv1 = L.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = L.BatchNorm2d(planes)
         self.conv2 = L.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
@@ -65,9 +65,9 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNet(nn.Module):
+class ResNet_LWE(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet, self).__init__()
+        super(ResNet_LWE, self).__init__()
         self.in_planes = 64
 
         self.conv1 = L.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
@@ -98,24 +98,24 @@ class ResNet(nn.Module):
         return out
 
 
-def ResNet18():
-    return ResNet(BasicBlock, [2,2,2,2])
+def ResNet18_LWE():
+    return ResNet_LWE(BasicBlock_LWE, [2,2,2,2])
 
-def ResNet34():
-    return ResNet(BasicBlock, [3,4,6,3])
+def ResNet34_LWE():
+    return ResNet_LWE(BasicBlock_LWE, [3,4,6,3])
 
-def ResNet50():
-    return ResNet(Bottleneck, [3,4,6,3])
+def ResNet50_LWE():
+    return ResNet_LWE(Bottleneck_LWE, [3,4,6,3])
 
-def ResNet101():
-    return ResNet(Bottleneck, [3,4,23,3])
+def ResNet101_LWE():
+    return ResNet_LWE(Bottleneck_LWE, [3,4,23,3])
 
-def ResNet152():
-    return ResNet(Bottleneck, [3,8,36,3])
+def ResNet152_LWE():
+    return ResNet_LWE(Bottleneck_LWE, [3,8,36,3])
 
 
 def test():
-    net = ResNet18()
+    net = ResNet18_LWE()
     y = net(torch.randn(1,3,32,32))
     print(y.size())
 
