@@ -133,6 +133,14 @@ elif args.net=='res50_lwe':
     net = ResNet50_LWE()
 elif args.net=='res101_lwe':
     net = ResNet101_LWE()
+elif args.net=='res18_bam':
+    net = ResNet18_BAM()
+elif args.net=='res34_bam':
+    net = ResNet34_BAM()
+elif args.net=='res50_bam':
+    net = ResNet50_BAM()
+elif args.net=='res101_bam':
+    net = ResNet101_BAM()
 elif args.net=="convmixer":
     # from paper, accuracy >96%. you can tune the depth and dim to scale accuracy and speed.
     net = ConvMixer(256, 16, kernel_size=args.convkernel, patch_size=1, n_classes=10)
