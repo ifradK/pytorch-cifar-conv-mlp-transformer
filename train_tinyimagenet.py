@@ -58,7 +58,7 @@ args = parser.parse_args()
 
 # take in args
 usewandb = ~args.nowandb
-if not usewandb:
+if usewandb:
     import wandb
     watermark = "{}_lr{}".format(args.net, args.lr)
     wandb.init(project="Imagenet-challange",
