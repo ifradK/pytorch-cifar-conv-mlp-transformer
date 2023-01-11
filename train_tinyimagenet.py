@@ -34,7 +34,7 @@ import random
 #FROM WEB START-------------------------------------------------------------------------------------------------------------------------
 
 # Install Python packages
-!pip install numpy torch torchvision pytorch-ignite tensorboardX tensorboard opendatasets efficientnet-pytorch
+# !pip install numpy torch torchvision pytorch-ignite tensorboardX tensorboard opendatasets efficientnet-pytorch
 
 # Import libraries
 import numpy as np
@@ -150,10 +150,10 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 
 # Retrieve data directly from Stanford data source
-!wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
+# !wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
   
 # Unzip raw zip file
-!unzip -qq 'tiny-imagenet-200.zip'
+# !unzip -qq 'tiny-imagenet-200.zip'
 
 # Define main data directory
 DATA_DIR = 'tiny-imagenet-200' # Original images come in shapes of [3,64,64]
