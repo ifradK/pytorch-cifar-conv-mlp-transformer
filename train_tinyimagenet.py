@@ -30,6 +30,41 @@ from models.convmixer import ConvMixer
 
 import torch
 import random
+
+#FROM WEB START-------------------------------------------------------------------------------------------------------------------------
+
+# Install Python packages
+!pip install numpy torch torchvision pytorch-ignite tensorboardX tensorboard opendatasets efficientnet-pytorch
+
+# Import libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime as dt
+
+import torch
+from torch import optim, nn
+from torch.utils.data import DataLoader, TensorDataset, Dataset
+from torchvision.utils import make_grid
+from torchvision import transforms as T
+from torchvision import models, datasets
+
+from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.metrics import Accuracy, Loss, Precision, Recall
+from ignite.handlers import LRScheduler, ModelCheckpoint, global_step_from_engine
+from ignite.contrib.handlers import ProgressBar, TensorboardLogger
+import ignite.contrib.engines.common as common
+
+import opendatasets as od
+import os
+from random import randint
+import urllib
+import zipfile
+
+
+#FROM WEB END-------------------------------------------------------------------------------------------------------------------------
+
+
 torch.manual_seed(37)
 random.seed(37)
 np.random.seed(37)
@@ -75,40 +110,171 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
-# Data
-print('==> Preparing data..')
-if args.net=="vit_timm":
-    size = 384
-else:
-    size = imsize
+# # Data
+# print('==> Preparing data..')
+# if args.net=="vit_timm":
+#     size = 384
+# else:
+#     size = imsize
 
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.Resize(size),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# transform_train = transforms.Compose([
+#     transforms.RandomCrop(32, padding=4),
+#     transforms.Resize(size),
+#     transforms.RandomHorizontalFlip(),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
+
+# transform_test = transforms.Compose([
+#     transforms.Resize(size),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
+
+# # Add RandAugment with N, M(hyperparameter)
+# if aug:  
+#     N = 2; M = 14;
+#     transform_train.transforms.insert(0, RandAugment(N, M))
+
+# # Prepare dataset
+# trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
+# trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
+
+# testset = torchvision.datasets.ImageNet(root='./data', train=False, download=True, transform=transform_test)
+# testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
+
+# classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+
+#FROM WEB START-------------------------------------------------------------------------------------------------------------------------
+
+
+# Retrieve data directly from Stanford data source
+!wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
+  
+# Unzip raw zip file
+!unzip -qq 'tiny-imagenet-200.zip'
+
+# Define main data directory
+DATA_DIR = 'tiny-imagenet-200' # Original images come in shapes of [3,64,64]
+
+# Define training and validation data paths
+TRAIN_DIR = os.path.join(DATA_DIR, 'train') 
+VALID_DIR = os.path.join(DATA_DIR, 'val')
+
+
+
+# Functions to display single or a batch of sample images
+def imshow(img):
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
+    plt.show()
+    
+def show_batch(dataloader):
+    dataiter = iter(dataloader)
+    images, labels = dataiter.next()    
+    imshow(make_grid(images)) # Using Torchvision.utils make_grid function
+    
+def show_image(dataloader):
+    dataiter = iter(dataloader)
+    images, labels = dataiter.next()
+    random_num = randint(0, len(images)-1)
+    imshow(images[random_num])
+    label = labels[random_num]
+    print(f'Label: {label}, Shape: {images[random_num].shape}')
+    
+    
+# Setup function to create dataloaders for image datasets
+def generate_dataloader(data, name, transform):
+    if data is None: 
+        return None
+    
+    # Read image files to pytorch dataset using ImageFolder, a generic data 
+    # loader where images are in format root/label/filename
+    # See https://pytorch.org/vision/stable/datasets.html
+    if transform is None:
+        dataset = datasets.ImageFolder(data, transform=T.ToTensor())
+    else:
+        dataset = datasets.ImageFolder(data, transform=transform)
+
+    # Set options for device
+    if use_cuda:
+        kwargs = {"pin_memory": True, "num_workers": 1}
+    else:
+        kwargs = {}
+    
+    # Wrap image dataset (defined above) in dataloader 
+    dataloader = DataLoader(dataset, batch_size=batch_size, 
+                        shuffle=(name=="train"), 
+                        **kwargs)
+    
+    return dataloader
+
+
+
+# Create separate validation subfolders for the validation images based on
+# their labels indicated in the val_annotations txt file
+val_img_dir = os.path.join(VALID_DIR, 'images')
+
+# Open and read val annotations text file
+fp = open(os.path.join(VALID_DIR, 'val_annotations.txt'), 'r')
+data = fp.readlines()
+
+# Create dictionary to store img filename (word 0) and corresponding
+# label (word 1) for every line in the txt file (as key value pair)
+val_img_dict = {}
+for line in data:
+    words = line.split('\t')
+    val_img_dict[words[0]] = words[1]
+fp.close()
+
+# Display first 10 entries of resulting val_img_dict dictionary
+{k: val_img_dict[k] for k in list(val_img_dict)[:10]}
+
+
+
+
+# Create subfolders (if not present) for validation images based on label,
+# and move images into the respective folders
+for img, folder in val_img_dict.items():
+    newpath = (os.path.join(val_img_dir, folder))
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    if os.path.exists(os.path.join(val_img_dir, img)):
+        os.rename(os.path.join(val_img_dir, img), os.path.join(newpath, img))
+        
+        
+
+
+# Define transformation sequence for image pre-processing
+# If not using pre-trained model, normalize with 0.5, 0.5, 0.5 (mean and SD)
+# If using pre-trained ImageNet, normalize with mean=[0.485, 0.456, 0.406], 
+# std=[0.229, 0.224, 0.225])
+
+preprocess_transform_pretrain = T.Compose([
+                T.Resize(256), # Resize images to 256 x 256
+                T.CenterCrop(224), # Center crop image
+                T.RandomHorizontalFlip(),
+                T.ToTensor(),  # Converting cropped images to tensors
+                T.Normalize(mean=[0.485, 0.456, 0.406], 
+                            std=[0.229, 0.224, 0.225])
 ])
 
-transform_test = transforms.Compose([
-    transforms.Resize(size),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
 
-# Add RandAugment with N, M(hyperparameter)
-if aug:  
-    N = 2; M = 14;
-    transform_train.transforms.insert(0, RandAugment(N, M))
 
-# Prepare dataset
-trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
+# Define batch size for DataLoaders
+batch_size = 64
 
-testset = torchvision.datasets.ImageNet(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
+# Create DataLoaders for pre-trained models (normalized based on specific requirements)
+trainloader = generate_dataloader(TRAIN_DIR, "train",
+                                  transform=preprocess_transform_pretrain)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+testloader = generate_dataloader(val_img_dir, "val",
+                                 transform=preprocess_transform_pretrain)
+
+
+#FROM WEB END-------------------------------------------------------------------------------------------------------------------------
+
 
 # Model factory..
 print('==> Building model..')
