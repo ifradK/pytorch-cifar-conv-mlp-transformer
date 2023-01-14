@@ -104,10 +104,10 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
-trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
+trainset = torchvision.datasets.ImageNet(root='./tiny-imagenet-200/train/', train=True, transform=transform_train)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.ImageNet(root='./data', train=False, download=True, transform=transform_test)
+testset = torchvision.datasets.ImageNet(root='./tiny-imagenet-200/test/', train=False, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
