@@ -197,12 +197,12 @@ if aug:
 # trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
 # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-trainloader = load_train_data(img_size=384, randaug_magnitude=9, batch_size=512)
+trainloader = load_train_data(384, 9, 512)
 
 # testset = torchvision.datasets.ImageNet(root='./data', train=False, download=True, transform=transform_test)
 # testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
 
-testloader = load_val_data(img_size=384, batch_size=100 if not args.throughput else 32)
+testloader = load_val_data(384, 100)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
