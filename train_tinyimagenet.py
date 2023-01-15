@@ -75,6 +75,96 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+from torch import FloatTensor, div
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+from torchvision.transforms.functional import InterpolationMode
+
+import pickle, torch
+import numpy as np
+
+class ImageNetDataset(Dataset):
+    """Dataset class for ImageNet"""
+    def __init__(self, dataset, labels, transform=None, normalize=None):
+        super(ImageNetDataset, self).__init__()
+        assert(len(dataset) == len(labels))
+        self.dataset = dataset
+        self.labels = labels
+        self.transform = transform
+        self.normalize = normalize
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        data = self.dataset[idx]
+        if self.transform:
+            data = self.transform(data)
+
+        data = div(data.type(FloatTensor), 255)
+        if self.normalize:
+            data = self.normalize(data)
+
+        return data, self.labels[idx]
+
+def load_train_data(img_size, magnitude, batch_size):
+    with open('train_dataset.pkl', 'rb') as f:
+        train_data, train_labels = pickle.load(f)
+    transform = transforms.Compose([
+        transforms.Resize(img_size, interpolation=InterpolationMode.BICUBIC),
+        transforms.RandAugment(num_ops=2,magnitude=magnitude),
+    ])
+    train_dataset = ImageNetDataset(train_data, train_labels.type(torch.LongTensor), transform,
+        normalize=transforms.Compose([
+            transforms.Normalize(
+                mean=(0.485, 0.456, 0.406),
+                std=(0.229, 0.224, 0.225)
+            )
+        ]),
+    )
+    train_loader = DataLoader(
+        train_dataset,
+        shuffle=True,
+        batch_size=batch_size,
+        num_workers=8,
+        pin_memory=True,
+        drop_last=True,
+    )
+    f.close()
+    return train_loader
+
+def load_val_data(img_size, batch_size):
+    with open('val_dataset.pkl', 'rb') as f:
+        val_data, val_labels = pickle.load(f)
+    transform = transforms.Compose([
+        transforms.Resize(img_size, interpolation=InterpolationMode.BICUBIC),
+    ])
+    val_dataset = ImageNetDataset(val_data, val_labels.type(torch.LongTensor), transform,
+        normalize=transforms.Compose([
+            transforms.Normalize(
+                mean=(0.485, 0.456, 0.406),
+                std=(0.229, 0.224, 0.225)
+            ),
+        ])
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True
+    )
+    f.close()
+    return val_loader
+
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------
+
+
+
 # Data
 print('==> Preparing data..')
 if args.net=="vit_timm":
@@ -82,19 +172,19 @@ if args.net=="vit_timm":
 else:
     size = imsize
 
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.Resize(size),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+# transform_train = transforms.Compose([
+#     transforms.RandomCrop(32, padding=4),
+#     transforms.Resize(size),
+#     transforms.RandomHorizontalFlip(),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
 
-transform_test = transforms.Compose([
-    transforms.Resize(size),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+# transform_test = transforms.Compose([
+#     transforms.Resize(size),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+# ])
 
 # Add RandAugment with N, M(hyperparameter)
 if aug:  
@@ -102,11 +192,15 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
-trainset = torchvision.datasets.Imagenet(root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
+# trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
+# trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
-testset = torchvision.datasets.Imagenet(root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
+trainloader = load_train_data(img_size=384, randaug_magnitude=9, batch_size=512)
+
+# testset = torchvision.datasets.ImageNet(root='./data', train=False, download=True, transform=transform_test)
+# testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=8)
+
+testloader = load_val_data(img_size=384, batch_size=100 if not args.throughput else 32)
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
