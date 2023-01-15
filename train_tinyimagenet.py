@@ -194,8 +194,6 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
-trainset = torchvision.datasets.MNIST("./tiny-imagenet-200/train/", train=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 # trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
 # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
