@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
-Train Imagenet with PyTorch and Vision Transformers!
+
+Train CIFAR10 with PyTorch and Vision Transformers!
 written by @kentaroy47, @arutema47
+
 '''
 
 from __future__ import print_function
@@ -38,7 +40,7 @@ torch.cuda.manual_seed_all(37)
 os.environ["CUBLAS_WORKSPACE_CONFIG"]=":4096:8"
 
 # parsers
-parser = argparse.ArgumentParser(description='PyTorch Imagenet Training')
+parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -61,7 +63,7 @@ usewandb = ~args.nowandb
 if usewandb:
     import wandb
     watermark = "{}_lr{}".format(args.net, args.lr)
-    wandb.init(project="Imagenet-challange",
+    wandb.init(project="imagenet-challange",
             name=watermark)
     wandb.config.update(args)
 
@@ -192,6 +194,8 @@ if aug:
     transform_train.transforms.insert(0, RandAugment(N, M))
 
 # Prepare dataset
+trainset = torchvision.datasets.MNIST("./tiny-imagenet-200/train/", train=True, transform=transform_train)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 # trainset = torchvision.datasets.ImageNet(root='./data', train=True, download=True, transform=transform_train)
 # trainloader = torch.utils.data.DataLoader(trainset, batch_size=bs, shuffle=True, num_workers=8)
 
@@ -244,14 +248,14 @@ elif args.net=="mlpmixer":
     patch_size = args.patch,
     dim = 512,
     depth = 6,
-    num_classes = 100
+    num_classes = 10
 )
 elif args.net=="vit_small":
     from models.vit_small import ViT
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -264,7 +268,7 @@ elif args.net=="vit_tiny":
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 4,
     heads = 6,
@@ -277,18 +281,18 @@ elif args.net=="simplevit":
     net = SimpleViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
     mlp_dim = 512
 )
 elif args.net=="vit":
-    # ViT for cifar100
+    # ViT for cifar10
     net = ViT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,
     heads = 8,
@@ -305,7 +309,7 @@ elif args.net=="cait":
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
@@ -320,7 +324,7 @@ elif args.net=="cait_small":
     net = CaiT(
     image_size = size,
     patch_size = args.patch,
-    num_classes = 100,
+    num_classes = 10,
     dim = int(args.dimhead),
     depth = 6,   # depth of transformer for patch to patch attention only
     cls_depth=2, # depth of cross attention of CLS tokens to patch
@@ -333,7 +337,7 @@ elif args.net=="cait_small":
 elif args.net=="swin":
     from models.swin import swin_t
     net = swin_t(window_size=args.patch,
-                num_classes=100,
+                num_classes=10,
                 downscaling_factors=(2,2,2,1))
 
 # For Multi-GPU
@@ -463,3 +467,4 @@ for epoch in range(start_epoch, args.n_epochs):
 # writeout wandb
 if usewandb:
     wandb.save("wandb_{}.h5".format(args.net))
+    
