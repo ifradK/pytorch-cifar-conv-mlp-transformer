@@ -130,7 +130,7 @@ def load_train_data(img_size, magnitude, batch_size):
         train_dataset,
         shuffle=True,
         batch_size=batch_size,
-        num_workers=8,
+        num_workers=2,
         pin_memory=True,
         drop_last=True,
     )
@@ -155,7 +155,7 @@ def load_val_data(img_size, batch_size):
         val_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         pin_memory=True
     )
     f.close()
