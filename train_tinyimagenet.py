@@ -241,12 +241,12 @@ elif args.net=="convmixer":
 elif args.net=="mlpmixer":
     from models.mlpmixer import MLPMixer
     net = MLPMixer(
-    image_size = 32,
+    image_size = imsize,
     channels = 3,
     patch_size = args.patch,
     dim = 512,
     depth = 6,
-    num_classes = 10
+    num_classes = 200
 )
 elif args.net=="vit_small":
     from models.vit_small import ViT
